@@ -1,4 +1,5 @@
 -module(formula_lex1).
+-compile(export_all).
 -behaviour(gen_server).
 -define(SERVER, ?MODULE).
 -record(state, { prev_string = "" :: string(),
@@ -39,7 +40,8 @@ handle_call(_Request, _From, State) ->
 handle_cast({new_string, String}, #state{ prev_string= PrevString }= State) ->
     String1 = appended_input(PrevString, String),
     gen_server:cast(self(), {emit_characters, String1}),
-    {noreply, State};
+    State1 = State#state{ prev_string= String },
+    {noreply, State1};
 handle_cast({emit_characters, String}, #state{ send_to= SendTo }= State) ->
     emit_characters(SendTo, String),
     {noreply, State};
@@ -62,8 +64,25 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+appended_input("", String) ->
+    String;
 appended_input(PrevString, String) ->
-    String.
+    case drop_common_leading(PrevString, String) of
+	{_Common, "", String1} ->
+	    String1;
+	{_Common, PrevString1, String1} ->
+	    Len = length(PrevString1),
+	    lists:append(string:chars($<, Len), String1)
+    end.
+
+-spec drop_common_leading(string(), string()) -> {Common :: string(), String1 :: string(), String2 :: string()}.
+drop_common_leading(String1, String2) ->
+    drop_common_leading(String1, String2, _Common= "").
+
+drop_common_leading([X|String1], [X|String2], Common) ->
+    drop_common_leading(String1, String2, [X|Common]);
+drop_common_leading(String1, String2, Common) ->
+    {lists:reverse(Common), String1, String2}.
 
 -spec emit_characters(pid(), string()) -> ok | {error, string()}.
 emit_characters(Pid, "") ->
