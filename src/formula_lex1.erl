@@ -41,9 +41,10 @@ handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
 
-handle_cast({new_string, String}, #state{ raw_input= PrevString, terms= PrevTerms }= State) ->
-    {Loc, String1} = appended_input(PrevString, String),
-    Terms = append_diff(PrevTerms, Loc, String1),
+handle_cast({new_string, String}, #state{ raw_input= PrevString, terms= PrevTerms, send_to= SendTo }= State) ->
+    {BackCount, Loc, String1} = appended_input(PrevString, String),
+    PrevTerms1 = backspace_terms(PrevTerms, BackCount, SendTo),
+    Terms = append_diff(PrevTerms1, Loc, String1, SendTo),
     {noreply, State#state{ raw_input= String, terms= Terms }};
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -65,47 +66,66 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
--spec appended_input(PrevString :: string(), NewString :: string()) -> {Loc :: integer(), DiffString :: string()}.
+-spec appended_input(PrevString :: string(), NewString :: string()) -> {BackCount :: integer(), Loc :: integer(), DiffString :: string()}.
 appended_input("", String) ->
-    {1, String};
+    {0, 1, String};
 appended_input(PrevString, String) ->
     case drop_common_leading(PrevString, String) of
 	{Common, "", String1} ->
-	    {length(Common) + 1, String1};
+	    {0, length(Common) + 1, String1};
 	{Common, PrevString1, String1} ->
-	    Len = length(PrevString1),
-	    {length(Common) + 1, lists:append(string:chars($<, Len), String1)}
+	    {length(PrevString1), length(Common) + 1, String1}
     end.
 
--spec append_diff(Terms :: [#term{}], Loc :: integer(), DiffString :: string()) -> Terms1 :: [#term{}].
-append_diff([]= Terms, 1, String) ->
-    append_diff1(1, String, [start]);
-append_diff(Terms, Loc, String) ->
-    append_diff1(Loc, String, lists:reverse(Terms)).
 
-append_diff1(_Loc, "", [start]) ->
-    [];
-append_diff1(_Loc, "", Acc) ->
+-spec backspace_terms(Terms :: [#term{}], BackCount :: integer(), SendTo :: pid()) -> Terms1 :: [#term{}].
+backspace_terms(Terms, BackCount, _SendTo) when Terms == [] orelse BackCount =< 0 ->
+    Terms;
+backspace_terms(Terms, BackCount, SendTo) ->
+    backspace_terms1(lists:reverse(Terms), BackCount, undefined, SendTo).
+
+backspace_terms1(Acc, 0, update_term, SendTo) ->
+    gen_server:cast(SendTo, {update_term, hd(Acc)}),
     lists:reverse(Acc);
-append_diff1(Loc, [Char|String], [Term|Terms]) ->
-    Char1 = cc(Char),
-    Loc1 = case Char1 of
-	       backspace -> Loc;
-	       _ -> Loc + 1
-	   end,
-    Terms1 = case meet(Term, Loc, Char1) of
-		 empty -> Terms;
-		 {#term{}= Term2, #term{}= Term3} -> [Term3,Term2|Terms];
-		 Term2 -> [Term2|Terms]
-	     end,
-    append_diff1(Loc1, String, Terms1).
+backspace_terms1(Acc, 0, _Acc1, _SendTo) ->
+    lists:reverse(Acc);
+backspace_terms1(Terms, BackCount, _Acc, SendTo) ->
+    {Terms1, Acc1} = case meet(Terms, 0, backspace) of
+			 empty ->
+			     gen_server:cast(SendTo, drop_term),
+			     {tl(Terms), undefined};
+			 #term{}= Term1 ->
+			     {[Term1|tl(Terms)], update_term}
+		     end,
+    backspace_terms1(Terms1, BackCount - 1, Acc1, SendTo).
+		     
+
+-spec append_diff(Terms :: [#term{}], Loc :: integer(), DiffString :: string(), SendTo :: pid()) -> Terms1 :: [#term{}].
+append_diff(Terms, Loc, String, SendTo) ->
+    append_diff1(Loc, String, lists:reverse(Terms), SendTo).
+
+append_diff1(_Loc, "", [], _SendTo) ->
+    [];
+append_diff1(_Loc, "", Acc, SendTo) ->
+    gen_server:cast(SendTo, {add_term, hd(Acc)}),
+    lists:reverse(Acc);
+append_diff1(Loc, [Char|String], Terms, SendTo) ->
+    case meet(Terms, Loc, cc(Char)) of
+	#term{}= NewTerm ->
+	    case Terms of
+		[] -> ok;
+		_ -> gen_server:cast(SendTo, {add_term, hd(Terms)})
+	    end,
+	    append_diff1(Loc + 1, String, [NewTerm|Terms], SendTo);
+	[#term{}|_]= Terms1 ->
+	    append_diff1(Loc + 1, String, Terms1, SendTo)
+    end.
 
 
--spec meet(Term :: #term{} | term(), Loc :: integer(), Char :: char()) -> start | empty | #term{} | {#term{}, #term{}}.
+-spec meet(Terms :: [#term{}], Loc :: integer(), backspace) -> empty | (NewTerm :: #term{});
+	  (Terms :: [#term{}], Loc :: integer(), Char :: char()) -> (NewTerm :: #term{}) | (Terms1 :: [#term{}]).
 
-meet(start, _Loc, backspace) ->
-    start;
-meet(#term{ type= numeral, value= N }= Term, _Loc, backspace) ->
+meet([#term{ type= numeral, value= N }= Term|_], _Loc, backspace) ->
     case lists:droplast(N) of
 	"" -> empty;
 	N1 -> update_term(Term, N1)
@@ -113,34 +133,24 @@ meet(#term{ type= numeral, value= N }= Term, _Loc, backspace) ->
 meet(_, _Loc, backspace) ->
     empty;
 
-meet(start, Loc, lparan) ->
+meet(_Terms, Loc, lparan) ->
     build_term(lparan, Loc);
-meet(Term, Loc, lparan) ->
-    {Term, build_term(lparan, Loc)};
 
-meet(start, Loc, rparan) ->
+meet(_Terms, Loc, rparan) ->
     build_term(rparan, Loc);
-meet(Term, Loc, rparan) ->
-    {Term, build_term(rapaan, Loc)};
 
-meet(start, Loc, {digit, N}) ->
+meet([#term{ type= numeral }= Term|Terms], _Loc, {digit, N}) ->
+    [append_term(Term, N)|Terms];
+meet([#term{}= _Term|_], Loc, {digit, N}) ->
     build_term(numeral, Loc, N);
-meet(#term{ type= numeral }= Term, _Loc, {digit, N}) ->
-    append_term(Term, N);
-meet(#term{}= Term, Loc, {digit, N}) ->
-    {Term, build_term(numeral, Loc, N)};
 
-meet(start, Loc, {op_add, Op}) ->
+meet(_Terms, Loc, {op_add, Op}) ->
     build_term(op_add, Loc, Op);
-meet(#term{}= Term, Loc, {op_add, Op}) ->
-    {Term, build_term(op_add, Loc, Op)};
 
-meet(start, Loc, {op_mul, Op}) ->
-    {Loc + 1, #term{ type= op_mul, loc= Loc, value= Op }};
-meet(#term{}= Term, Loc, {op_mul, Op}) ->
-    {Term, build_term(op_mul, Loc, Op)};
+meet(_Terms, Loc, {op_mul, Op}) ->
+    build_term(op_mul, Loc, Op);
 
-meet(_Term, _Loc, empty) ->
+meet(_Terms, _Loc, empty) ->
     empty.
 
 
@@ -178,8 +188,8 @@ update_term(#term{}= Term, Value) ->
 -spec cc(char()) -> atom() | {atom(), term()}.
 %% cc: convert character; build term
 cc($<) -> backspace;
-cc($() -> lparam;
-cc($)) -> rparam;
+cc($() -> lparan;
+cc($)) -> rparan;
 cc($+) -> {op_add, "+"};
 cc($-) -> {op_add, "-"};
 cc($*) -> {op_mul, "*"};
