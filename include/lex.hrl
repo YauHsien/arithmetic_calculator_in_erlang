@@ -13,6 +13,8 @@
 -define(lparan, lparan).
 -define(rparan, rparan).
 -define(not_accepted, not_accepted).
+-define(head, head).
+-define(non_head, non_head).
 
 -record(term, { type :: ?backspace
 		      | ?float

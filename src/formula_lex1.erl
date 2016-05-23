@@ -102,50 +102,52 @@ backspace_terms1(Terms, BackCount, _Acc, SendTo) ->
 
 -spec append_diff(Terms :: [#term{}], Loc :: integer(), DiffString :: string(), SendTo :: pid()) -> Terms1 :: [#term{}].
 append_diff(Terms, Loc, String, SendTo) ->
-    append_diff1(Loc, String, lists:reverse(Terms), SendTo).
+    append_diff1(Loc, String, lists:reverse(Terms), SendTo, ?head).
 
-append_diff1(_Loc, "", [], _SendTo) ->
+append_diff1(_Loc, "", [], _SendTo, _HeadOrNot) ->
     [];
-append_diff1(_Loc, "", Acc, SendTo) ->
+append_diff1(_Loc, "", Acc, SendTo, HeadOrNot) ->
     Terms1 = case Acc of
 		 [?sep|Terms] ->
 		     Terms;
 		 Terms ->
-		     gen_server:cast(SendTo, {add_term, hd(Terms)}),
+		     do_when(HeadOrNot =/= head,
+			     fun() -> gen_server:cast(SendTo, {add_term, hd(Terms)}) end),
 		     Terms
 	     end,
     lists:reverse(Terms1);
-append_diff1(Loc, [Char|String], Terms, SendTo) ->
+append_diff1(Loc, [Char|String], Terms, SendTo, HeadOrNot) ->
     case meet(Terms, Loc, cc(Char)) of
 	#term{}= NewTerm ->
 	    case Terms of
 		Terms1 when Terms1 == [] orelse Terms1 == [?sep] ->
-		    append_diff1(Loc + 1, String, [NewTerm], SendTo);
+		    append_diff1(Loc + 1, String, [NewTerm], SendTo, ?non_head);
 		[?sep|Terms1] ->
-io:fwrite("new term: ~w~nterm1: ~w~n", [NewTerm, hd(Terms1)]),
 		    case {is_op(NewTerm), is_op(hd(Terms1))} of
 			{true, true} ->
-			    append_diff1(Loc + 1, String, [NewTerm|tl(Terms1)], SendTo);
+			    append_diff1(Loc + 1, String, [NewTerm|tl(Terms1)], SendTo, ?non_head);
 			_ ->
-			    append_diff1(Loc + 1, String, [NewTerm|Terms1], SendTo)
+			    append_diff1(Loc + 1, String, [NewTerm|Terms1], SendTo, ?non_head)
 		    end;
 		_ ->
-		    gen_server:cast(SendTo, {add_term, hd(Terms)}),
-		    append_diff1(Loc + 1, String, [NewTerm|Terms], SendTo)
+		    do_when(HeadOrNot =/= ?head,
+			    fun() -> gen_server:cast(SendTo, {add_term, hd(Terms)}) end),
+		    append_diff1(Loc + 1, String, [NewTerm|Terms], SendTo, ?non_head)
 	    end;
 	[Term|_]= Terms1 when Term == ?sep orelse is_record(Term, term) ->
-	    append_diff1(Loc + 1, String, Terms1, SendTo);
+	    append_diff1(Loc + 1, String, Terms1, SendTo, ?non_head);
 	?sep= _NewTerm ->
 	    case Terms of
 		[] -> ok;
-		_ -> gen_server:cast(SendTo, {add_term, hd(Terms)})
+		_ -> do_when(HeadOrNot =/= head,
+			     fun() -> gen_server:cast(SendTo, {add_term, hd(Terms)}) end)
 	    end,
-	    append_diff1(Loc + 1, String, [?sep|Terms], SendTo);
+	    append_diff1(Loc + 1, String, [?sep|Terms], SendTo, ?non_head);
 	{replace, #term{}= Term1} ->
-	    gen_server:cast(SendTo, drop_term),
-	    gen_server:cast(SendTo, {add_term, Term1}),
+	    do_when(HeadOrNot =/= head,
+		    fun() -> gen_server:cast(SendTo, [drop_term, {add_term, Term1}]) end),
 	    Terms1 = [Term1|tl(Terms)],
-	    append_diff1(Loc + 1, String, Terms1, SendTo)
+	    append_diff1(Loc + 1, String, Terms1, SendTo, ?non_head)
     end.
 
 
@@ -239,6 +241,9 @@ convert_term(#term{}= Term, Type) ->
 is_op(#term{ type= ?op_mul }) -> true;
 is_op(#term{ type= ?op_add }) -> true;
 is_op(_) -> false.
+
+do_when(true, F) -> apply(F, []);
+do_when(_, _) -> ok.
 
 
 -spec cc(char()) -> atom() | {atom(), term()}.
