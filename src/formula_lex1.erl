@@ -107,51 +107,98 @@ append_diff(Terms, Loc, String, SendTo) ->
 append_diff1(_Loc, "", [], _SendTo) ->
     [];
 append_diff1(_Loc, "", Acc, SendTo) ->
-    gen_server:cast(SendTo, {add_term, hd(Acc)}),
-    lists:reverse(Acc);
+    Terms1 = case Acc of
+		 [?sep|Terms] ->
+		     Terms;
+		 Terms ->
+		     gen_server:cast(SendTo, {add_term, hd(Terms)}),
+		     Terms
+	     end,
+    lists:reverse(Terms1);
 append_diff1(Loc, [Char|String], Terms, SendTo) ->
     case meet(Terms, Loc, cc(Char)) of
 	#term{}= NewTerm ->
 	    case Terms of
+		Terms1 when Terms1 == [] orelse Terms1 == [?sep] ->
+		    append_diff1(Loc + 1, String, [NewTerm], SendTo);
+		[?sep|Terms1] ->
+		    case {is_op(NewTerm), is_op(hd(Terms1))} of
+			{true, true} ->
+			    append_diff1(Loc + 1, String, [NewTerm|tl(Terms1)], SendTo);
+			_ ->
+			    append_diff1(Loc + 1, String, [NewTerm|Terms1], SendTo)
+		    end;
+		_ ->
+		    gen_server:cast(SendTo, {add_term, hd(Terms)}),
+		    append_diff1(Loc + 1, String, [NewTerm|Terms], SendTo)
+	    end;
+	[Term|_]= Terms1 when Term == ?sep orelse is_record(Term, term) ->
+	    append_diff1(Loc + 1, String, Terms1, SendTo);
+	?sep= _NewTerm ->
+	    case Terms of
 		[] -> ok;
 		_ -> gen_server:cast(SendTo, {add_term, hd(Terms)})
 	    end,
-	    append_diff1(Loc + 1, String, [NewTerm|Terms], SendTo);
-	[#term{}|_]= Terms1 ->
+	    append_diff1(Loc + 1, String, [?sep|Terms], SendTo);
+	{replace, #term{}= Term1} ->
+	    gen_server:cast(SendTo, drop_term),
+	    gen_server:cast(SendTo, {add_term, Term1}),
+	    Terms1 = [Term1|tl(Terms)],
 	    append_diff1(Loc + 1, String, Terms1, SendTo)
     end.
 
 
--spec meet(Terms :: [#term{}], Loc :: integer(), backspace) -> empty | (NewTerm :: #term{});
-	  (Terms :: [#term{}], Loc :: integer(), Char :: char()) -> (NewTerm :: #term{}) | (Terms1 :: [#term{}]).
+-spec meet(Terms :: terms1(), Loc :: integer(), backspace) -> ?empty | (NewTerm :: term1());
+	  (Terms :: terms1(), Loc :: integer(), Char :: char()) -> (NewTerm :: term1()) | (Terms1 :: terms1()) | {replace, #term{}}.
 
-meet([#term{ type= numeral, value= N }= Term|_], _Loc, backspace) ->
+meet([#term{ type= ?numeral, value= N }= Term|_], _Loc, ?backspace) ->
     case lists:droplast(N) of
-	"" -> empty;
+	"" -> ?empty;
 	N1 -> update_term(Term, N1)
     end;
-meet(_, _Loc, backspace) ->
-    empty;
+meet(_, _Loc, ?backspace) ->
+    ?empty;
 
-meet(_Terms, Loc, lparan) ->
-    build_term(lparan, Loc);
+meet(_Terms, Loc, ?lparan) ->
+    build_term(?lparan, Loc);
 
-meet(_Terms, Loc, rparan) ->
-    build_term(rparan, Loc);
+meet(_Terms, Loc, ?rparan) ->
+    build_term(?rparan, Loc);
 
-meet([#term{ type= numeral }= Term|Terms], _Loc, {digit, N}) ->
+meet([#term{ type= ?numeral }= Term|Terms], _Loc, ?point) ->
+    [append_term(convert_term(Term, ?float), ".")|Terms];
+meet([#term{ type= ?float }= Term|Terms], _Loc, ?point) ->
+    [append_term(convert_term(Term, ?not_accepted), ".")|Terms];
+meet([#term{ type= ?not_accepted }= Term|Terms], _Loc, ?point) ->
+    [append_term(Term, ".")|Terms];
+meet(_Terms, Loc, ?point) ->
+    build_term(?not_accepted, Loc, ".");
+
+meet([#term{ type= Type }= Term|Terms], _Loc, {?digit, N}) when Type == ?numeral orelse Type == ?float ->
     [append_term(Term, N)|Terms];
-meet([#term{}= _Term|_], Loc, {digit, N}) ->
-    build_term(numeral, Loc, N);
+meet([#term{ type= ?not_accepted }= Term|Terms], _Loc, {?digit, N}) ->
+    [append_term(Term, N)|Terms];
+meet(_Term, Loc, {?digit, N}) ->
+    build_term(?numeral, Loc, N);
 
-meet(_Terms, Loc, {op_add, Op}) ->
-    build_term(op_add, Loc, Op);
+meet([#term{ type= Type }|_], Loc, {Type1, Op}) when (Type == ?op_add orelse Type == ?op_mul) andalso (Type1 == ?op_add orelse Type == ?op_mul) ->
+    {replace, build_term(Type1, Loc, Op)};
 
-meet(_Terms, Loc, {op_mul, Op}) ->
-    build_term(op_mul, Loc, Op);
+meet(_Terms, Loc, {?op_add, Op}) ->
+    build_term(?op_add, Loc, Op);
 
-meet(_Terms, _Loc, empty) ->
-    empty.
+meet(_Terms, Loc, {?op_mul, Op}) ->
+    build_term(?op_mul, Loc, Op);
+
+meet([?sep|_]= Terms, _Loc, ?sep) ->
+    Terms;
+meet(_Terms, _Loc, ?sep) ->
+    ?sep;
+
+meet([#term{ type= ?not_accepted }= Term|Terms], _Loc, {?not_accepted, S}) ->
+    [append_term(Term, S)|Terms];
+meet(_Terms, Loc, {?not_accepted, S}) ->
+    build_term(?not_accepted, Loc, S).
 
 
 -spec drop_common_leading(string(), string()) -> {Common :: string(), String1 :: string(), String2 :: string()}.
@@ -185,23 +232,33 @@ append_term(#term{ value= Value }= Term, Value1) ->
 update_term(#term{}= Term, Value) ->
     Term#term{ value= Value }.
 
+convert_term(#term{}= Term, Type) ->
+    Term#term{ type= Type }.
+
+is_op(#term{ type= ?op_mul }) -> true;
+is_op(#term{ type= ?op_add }) -> true;
+is_op(_) -> false.
+
+
 -spec cc(char()) -> atom() | {atom(), term()}.
 %% cc: convert character; build term
-cc($<) -> backspace;
-cc($() -> lparan;
-cc($)) -> rparan;
-cc($+) -> {op_add, "+"};
-cc($-) -> {op_add, "-"};
-cc($*) -> {op_mul, "*"};
-cc($/) -> {op_mul, "/"};
-cc($0) -> {digit, "0"};
-cc($1) -> {digit, "1"};
-cc($2) -> {digit, "2"};
-cc($3) -> {digit, "3"};
-cc($4) -> {digit, "4"};
-cc($5) -> {digit, "5"};
-cc($6) -> {digit, "6"};
-cc($7) -> {digit, "7"};
-cc($8) -> {digit, "8"};
-cc($9) -> {digit, "9"};
-cc(_) -> empty.
+cc($<) -> ?backspace;
+cc($() -> ?lparan;
+cc($)) -> ?rparan;
+cc($+) -> {?op_add, "+"};
+cc($-) -> {?op_add, "-"};
+cc($*) -> {?op_mul, "*"};
+cc($/) -> {?op_mul, "/"};
+cc($.) -> ?point;
+cc($0) -> {?digit, "0"};
+cc($1) -> {?digit, "1"};
+cc($2) -> {?digit, "2"};
+cc($3) -> {?digit, "3"};
+cc($4) -> {?digit, "4"};
+cc($5) -> {?digit, "5"};
+cc($6) -> {?digit, "6"};
+cc($7) -> {?digit, "7"};
+cc($8) -> {?digit, "8"};
+cc($9) -> {?digit, "9"};
+cc($\s) -> ?sep;
+cc(S) -> {?not_accepted, [S]}.
