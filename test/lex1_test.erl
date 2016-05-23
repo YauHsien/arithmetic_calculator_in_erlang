@@ -29,8 +29,8 @@ lex1_backspace_terms_test() ->
 
 lex1_append_diff_formula_test() ->
     SendTo = self(),
-    R1 = formula_lex1:append_diff("", 1, "()12+/34()*-56/*78", SendTo),
-    ?assertEqual([{term,lparan,1,undefined},
+    R1 = formula_lex1:append_diff([], 1, "()12+/34()*-56/*78", SendTo),
+    E = [{term,lparan,1,undefined},
 		  {term,rparan,2,undefined},
 		  {term,numeral,3,"12"},
 		  {term,op_mul,6,"/"},
@@ -41,7 +41,7 @@ lex1_append_diff_formula_test() ->
 		  {term,numeral,13,"56"},
 		  {term,op_mul,16,"*"},
 		  {term,numeral,17,"78"}],
-		R1).
+    ?assertEqual(E, R1).
 
 lex1_append_diff_formula_consecutive_test() ->
     SendTo = self(),
@@ -80,6 +80,25 @@ lex1_append_diff_formula_consecutive_numbers_test() ->
 
 lex1_append_diff_formula_consecutive_operators_test() ->
     SendTo = self(),
-    R1 = formula_lex1:append_diff([], 1, " + /- ", SendTo),
-    E = [formula_lex1:build_term(?op_add, 5, "-")],
+    R1 = formula_lex1:append_diff([], 1, " +- ", SendTo),
+    E = [formula_lex1:build_term(?op_add, 3, "-")],
     ?assertEqual(E, R1).
+
+lex1_append_diff_formula_consecutive_operators1_test() ->
+    SendTo = self(),
+    R1 = formula_lex1:append_diff([], 1, "+*", SendTo),
+    E = [formula_lex1:build_term(?op_mul, 2, "*")],
+    ?assertEqual(E, R1).
+
+lex1_append_diff_formula_consecutive_operators2_test() ->
+    SendTo = self(),
+    R1 = formula_lex1:append_diff([], 1, "- /", SendTo),
+    E = [formula_lex1:build_term(?op_mul, 3, "/")],
+    ?assertEqual(E, R1).
+
+lex1_append_diff_formula_consecutive_operators3_test() ->
+    SendTo = self(),
+    R1 = formula_lex1:append_diff([], 1, "/ + ", SendTo),
+    E = [formula_lex1:build_term(?op_add, 3, "+")],
+    ?assertEqual(E, R1).
+

@@ -122,6 +122,7 @@ append_diff1(Loc, [Char|String], Terms, SendTo) ->
 		Terms1 when Terms1 == [] orelse Terms1 == [?sep] ->
 		    append_diff1(Loc + 1, String, [NewTerm], SendTo);
 		[?sep|Terms1] ->
+io:fwrite("new term: ~w~nterm1: ~w~n", [NewTerm, hd(Terms1)]),
 		    case {is_op(NewTerm), is_op(hd(Terms1))} of
 			{true, true} ->
 			    append_diff1(Loc + 1, String, [NewTerm|tl(Terms1)], SendTo);
@@ -181,7 +182,7 @@ meet([#term{ type= ?not_accepted }= Term|Terms], _Loc, {?digit, N}) ->
 meet(_Term, Loc, {?digit, N}) ->
     build_term(?numeral, Loc, N);
 
-meet([#term{ type= Type }|_], Loc, {Type1, Op}) when (Type == ?op_add orelse Type == ?op_mul) andalso (Type1 == ?op_add orelse Type == ?op_mul) ->
+meet([#term{ type= Type }|_], Loc, {Type1, Op}) when (Type == ?op_add orelse Type == ?op_mul) andalso (Type1 == ?op_add orelse Type1 == ?op_mul) ->
     {replace, build_term(Type1, Loc, Op)};
 
 meet(_Terms, Loc, {?op_add, Op}) ->
