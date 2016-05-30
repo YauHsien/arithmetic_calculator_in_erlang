@@ -21,13 +21,42 @@ parsing1_add_term_test() ->
 
     Exp = undefined,
 
+    Term1 = #term{ type= ?lparan, loc= 1 },
     Exp1 = #expression{},
 
-    ?assertEqual(Exp1, formula_parsing1:add_term(Exp,
-						 #term{
-						    type= ?lparan,
-						    loc= 1
-						   })).
+    Term2 = #term{ type= ?numeral, loc= 2, value= "12" },
+    Exp2 = #expression{ left= Term2 },
+
+    Term3 = #term{ type= ?op_add, loc= 4, value= "+" },
+    Exp3 = #expression{ type= ?op_add, left= Term2 },
+
+    Term4 = #term{ type= ?numeral, loc= 5, value= "34" },
+    Exp4 = #expression{ type= ?op_add, left= Term2, right= Term4 },
+
+    Term5 = #term{ type= ?rparan, loc= 7 },
+    Exp5 = #expression{ left= Exp4 },
+
+    Term6 = #term{ type= ?op_mul, loc= 8, value= "/" },
+    Exp6 = #expression{ type= ?op_div, left= Exp4 },
+
+    Term7 = #term{ type= ?numeral, loc= 9, value= "56" },
+    Exp7 = #expression{ type= ?op_div, left= Exp4, right= Term7 },
+
+    Term8 = #term{ type= ?op_mul, loc= 11, value= "*" },
+    Exp8 = #expression{ type= ?op_mul, left= Exp7 },
+
+    Term9 = #term{ type= ?numeral, loc= 12, value= "78" },
+    Exp9 = #expression{ type= ?op_mul, left= Exp7, right= Term9 },
+
+    ?assertEqual(Exp1, formula_parsing1:add_term(Exp, Term1)),
+    ?assertEqual(Exp2, formula_parsing1:add_term(Exp1, Term2)),
+    ?assertEqual(Exp3, formula_parsing1:add_term(Exp2, Term3)),
+    ?assertEqual(Exp4, formula_parsing1:add_term(Exp3, Term4)),
+    ?assertEqual(Exp5, formula_parsing1:add_term(Exp4, Term5)),
+    ?assertEqual(Exp6, formula_parsing1:add_term(Exp5, Term6)),
+    ?assertEqual(Exp7, formula_parsing1:add_term(Exp6, Term7)),
+    ?assertEqual(Exp8, formula_parsing1:add_term(Exp7, Term8)),
+    ?assertEqual(Exp9, formula_parsing1:add_term(Exp8, Term9)).
 
 
 parsing1_drop_term_test() ->

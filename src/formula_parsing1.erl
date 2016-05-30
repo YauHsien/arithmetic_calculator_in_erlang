@@ -104,7 +104,20 @@ add_term(#expression{}= Exp, #term{ type= ?lparan }) ->
     Exp#expression{ right= #expression{} };
 
 add_term(#expression{}= Exp, #term{ type= ?rparan }) ->
-    #expression{ left= Exp }.
+    #expression{ left= Exp };
+
+add_term(#expression{}= Exp, #term{ type= Type }= Term) when Type == ?op_mul orelse Type == ?op_add ->
+    #expression{
+       type =
+	   case Term#term.value of
+	       "+" -> ?op_add;
+	       "-" -> ?op_sub;
+	       "*" -> ?op_mul;
+	       "/" -> ?op_div
+	   end,
+       left= Exp
+}.
+
 
 
 
