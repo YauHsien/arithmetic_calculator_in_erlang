@@ -17,6 +17,19 @@
 %% 2> {add_term,{term,op_add,11,[45]}} received
 %% 2> {add_term,{term,numeral,12,[55,56]}} received
 
+parsing1_add_term_test() ->
+
+    Exp = undefined,
+
+    Exp1 = #expression{},
+
+    ?assertEqual(Exp1, formula_parsing1:add_term(Exp,
+						 #term{
+						    type= ?lparan,
+						    loc= 1
+						   })).
+
+
 parsing1_drop_term_test() ->
 
     Exp =
