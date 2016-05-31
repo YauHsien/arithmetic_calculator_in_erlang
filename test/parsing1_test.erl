@@ -153,3 +153,42 @@ parsing1_add_drop_test() ->
 			  ),
 			 #term{ type= ?numeral, loc= 14, value= "78" }
 			)).
+
+parsing1_parse_test() ->
+
+    Exp = undefined,
+
+    Terms =
+	[ {add_term, #term{ type= ?numeral, loc= 2, value= "12" }},
+	  {add_term, #term{ type= ?op_mul, loc= 3, value= "*" }},
+	  {add_term, #term{ type= ?lparan, loc=5, value= "(" }},
+	  {add_term, #term{ type= ?float, loc= 7, value= "3.4" }},
+	  {add_term, #term{ type= ?op_mul, loc= 10, value= "+" }},
+	  {add_term, #term{ type= ?numeral, loc= 10, value= "56" }},
+	  {add_term, #term{ type= ?rparan, loc= 11, value= ")" }},
+	  {add_term, #term{ type= ?op_add, loc= 12, value= "+" }},
+	  {add_term, #term{ type= ?numeral, loc= 13, value= "78" }},
+	  drop_term,
+	  drop_term,
+	  {add_term, #term{ type= ?op_add, loc= 13, value= "/" }},
+	  {add_term, #term{ type= ?numeral, loc= 14, value= "78" }}
+	],
+
+    Exp1 = 
+	#expression{
+	   type= ?op_div,
+	   left =
+	       #expression{
+		  type= ?op_mul,
+		  left= #term{ type= ?numeral, loc= 2, value= "12" },
+		  right=
+		      #expression{
+			 type= ?op_add,
+			 left= #term{ type= ?float, loc= 7, value= "3.4" },
+			 right= #term{ type= ?numeral, loc = 10, value= "56" }
+			}
+		 },
+	   right= #term{ type= ?numeral, loc= 14, value= "78" }
+	  },
+io:fwrite("~p~n", [formula_parsing1:parse(Exp, Terms)]),
+    ?assertEqual(Exp1, formula_parsing1:parse(Exp, Terms)).

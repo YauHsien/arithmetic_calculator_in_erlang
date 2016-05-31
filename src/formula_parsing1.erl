@@ -69,7 +69,23 @@ code_change(_OldVsn, State, _Extra) ->
 %% 2> {add_term,{term,op_add,11,[45]}} received
 %% 2> {add_term,{term,numeral,12,[55,56]}} received
 
+-spec parse(#expression{}, [{(add_term|drop_term), #term{}}]) -> #expression{}.
+
+parse(Exp, []) ->
+    Exp;
+
+parse(Exp, [{add_term, Term}|Terms]) ->
+    parse(parse(Exp, add_term, Term), Terms);
+
+parse(Exp, [drop_term|Terms]) ->
+    parse(parse(Exp, drop_term, undefined), Terms).
+
+
+
 -spec parse(#expression{}, (add_term | drop_term), #term{}) -> #expression{}.
+
+parse(#expression{ right= Right }= Exp, add_term, #term{ type= Type }= Term) when Right =/= undefined andalso Type =/= ?rparan ->
+    Exp#expression{ right= parse(Right, add_term, Term) };
 
 parse(Exp, add_term, Term) ->
     add_term(Exp, Term);
@@ -100,6 +116,9 @@ add_term(#expression{ type= Type, left= Left, right= undefined }= Exp, #term{ ty
 add_term(undefined, #term{ type= ?lparan }) ->
     #expression{};
 
+add_term(undefined, #term{ type= Type }= Term) when Type == ?numeral orelse Type == ?float ->
+    #expression{ left= Term };
+
 add_term(#expression{}= Exp, #term{ type= ?lparan }) ->
     Exp#expression{ right= #expression{} };
 
@@ -116,13 +135,16 @@ add_term(#expression{}= Exp, #term{ type= Type }= Term) when Type == ?op_mul ore
 	       "/" -> ?op_div
 	   end,
        left= Exp
-}.
+      }.
 
 
 
 
 -spec drop_term(#term{}) -> undefind;
 	       (#expression{}) -> #expression{}.
+
+drop_term(undefined) ->
+    undefined;
 
 drop_term(#term{ type= Type }) when Type == ?float orelse Type == ?numeral ->
     undefined;
