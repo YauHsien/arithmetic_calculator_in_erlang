@@ -117,3 +117,39 @@ parsing1_drop_term_test() ->
     
     ?assertEqual(Exp1, formula_parsing1:drop_term(Exp)),
     ?assertEqual(Exp2, formula_parsing1:drop_term(Exp1)).
+
+parsing1_add_drop_test() ->
+
+    Exp =
+	#expression{
+	   type= ?op_sub,
+	   left =
+	       #expression{
+		  type= ?op_mul,
+		  left= #term{ type= ?numeral, loc= 2, value= "12" },
+		  right=
+		      #expression{
+			 type= ?op_add,
+			 left= #term{ type= ?float, loc= 7, value= "34.25" },
+			 right= #term{ type= ?numeral, loc = 10, value= "56" }
+			}
+		 },
+	   right= #term{ type= ?float, loc= 13, value= "7.5" }
+	  },
+
+    Exp1 = Exp#expression{
+	     type= ?op_div,
+	     right= #term{ type= ?numeral, loc= 14, value= "78" }
+	    },
+
+    ?assertEqual(Exp1, formula_parsing1:add_term(
+			 formula_parsing1:add_term(
+			   formula_parsing1:drop_term(
+			     formula_parsing1:drop_term(
+			       Exp
+			      )
+			    ),
+			   #term{ type= ?op_mul, loc= 12, value= "/" }
+			  ),
+			 #term{ type= ?numeral, loc= 14, value= "78" }
+			)).
