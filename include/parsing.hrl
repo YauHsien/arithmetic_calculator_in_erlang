@@ -9,10 +9,12 @@
 
 -record(expression, { type :: ?addition | ?factor,
 		      op :: ?op_add | ?op_sub | ?op_mul | ?op_div,
+		      no :: integer(),
 		      left :: #expression{} | int1() | float1(),
 		      right :: #expression{} | int1() | float1()
 		    }).
 
--type formula() :: #expression{}.
+-record(expression_info, { expression :: #expression{},
+			   size :: integer() }).
 
 -endif.
