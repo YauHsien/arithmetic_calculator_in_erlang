@@ -93,7 +93,9 @@ backspace_terms1(Terms, BackCount, _Acc, SendTo) ->
     {Terms1, Acc1} = case meet(Terms, 0, backspace) of
 			 empty ->
 			     gen_server:cast(SendTo, drop_term),
-			     {tl(Terms), undefined};
+			     {case Terms of
+				  [] -> [];
+				  _ -> tl(Terms) end, undefined};
 			 #term{}= Term1 ->
 			     {[Term1|tl(Terms)], update_term}
 		     end,
