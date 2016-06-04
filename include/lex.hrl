@@ -34,7 +34,7 @@
 -type term1() :: ?sep | #term{}.
 -type terms() :: [#term{}].
 -type terms1() :: [term1()].
--type int1() :: #term{ type :: ?numeral }.
--type float1() :: #term{ type :: ?float }.
+%-type int1() :: #term{ type :: ?numeral }.
+%-type float1() :: #term{ type :: ?float }.
 
 -endif.

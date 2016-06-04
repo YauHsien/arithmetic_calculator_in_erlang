@@ -2,19 +2,17 @@
 -define(__parsing_hrl, __parsing_hrl).
 -include("../include/lex.hrl").
 
--define(addition, addition).
--define(factor, factor).
--define(op_sub, op_sub).
--define(op_div, op_div).
+-type int1() :: #term{ type :: ?numeral }.
+-type float1() :: #term{ type :: ?float }.
+-type op_fac() :: #term{ type :: ?op_mul }.
+-type op_add() :: #term{ type :: ?op_add }.
 
--record(expression, { type :: ?addition | ?factor,
-		      op :: ?op_add | ?op_sub | ?op_mul | ?op_div,
-		      no :: integer(),
+-record(expression, { full = false :: boolean(),
+		      op :: op_fac() | op_add(),
 		      left :: #expression{} | int1() | float1(),
 		      right :: #expression{} | int1() | float1()
 		    }).
 
--record(expression_info, { expression :: #expression{},
-			   size :: integer() }).
+-type waiting_tree() :: [#expression{}].
 
 -endif.
