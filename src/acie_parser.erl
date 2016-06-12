@@ -56,13 +56,30 @@ add_term([#expression{ op= PrevTerm, right= Right }= Exp|WT],
     [#expression{ op= Term, left= Right }, Exp#expression{ right= undefined }|
      WT];
 
-add_term([#expression{ right= Right }= Exp|WT], #term{ type= ?op_mul }= Term,
-	 #term{ type= ?op_add }= PrevTerm)
-  when is_record(Right, expression) ->
+add_term([#expression{ op= PrevTerm, right= undefined }= Exp|WT],
+	 #term{ type= ?op_mul }= Term,
+	 #term{ type= ?op_add }= PrevTerm) ->
 
-    add_term([Right, Exp#expression{ right= undefind }|WT],
-	     Term,
-	     PrevTerm);
+    [Exp#expression{ op= Term }|WT];
+
+add_term([#expression{ full= true,
+		       op= #term{ type= ?op_add },
+		       right= Right }= Exp|WT],
+	 #term{ type= ?op_mul }= Term,
+	 #term{ type= TypeNum }= PrevTerm)
+  when TypeNum == ?float orelse TypeNum == ?numeral ->
+
+    case Right of
+	#term{} ->
+	    [#expression{ op= Term, left= Right },
+	     Exp#expression{ full= false, right= undefined }|WT];
+	#expression{} ->
+	    add_term(
+	      [Right,
+	       Exp#expression{ full= false, right= undefind }|WT],
+	      Term,
+	      PrevTerm)
+    end;
 
 add_term([#expression{ full= true, op= #term{ type= TypeOp }}= Exp|WT],
 	 #term{ type= TypeOp1 }= Term,

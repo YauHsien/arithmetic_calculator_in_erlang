@@ -75,3 +75,25 @@ add_term_3_case_3_test() ->
     WT1 = acie_parser:add_term(WT, Term, Term1),
     EWT = [#expression{ left= Exp }],
     ?assertEqual(EWT, WT1).
+
+add_term_3_case_4_test() ->
+    
+    Term = #term{ type= ?lparan, loc=5, value= "(" },
+    Term1 = #term{ type= ?op_mul, loc=4, value= "*" },
+    WT = [#expression{ op= Term1 }],
+    WT1 = acie_parser:add_term(WT, Term, Term1),
+    EWT = [#expression{}|WT],
+    ?assertEqual(EWT, WT1).
+    
+add_term_3_case_5_test() ->
+    
+    Term = #term{ type= ?op_mul, loc= 5, value= "/" },
+    Term1 = #term{ type= ?numeral, loc= 4, value= "2" },
+    WT = [Exp =
+	      #expression{ full= true,
+			   op= #term{ type= ?op_add },
+			   right= Term1 }],
+    WT1 = acie_parser:add_term(WT, Term, Term1),
+    EWT = [#expression{ op= Term, left= Term1 },
+	   Exp#expression{ full= false, right= undefined }],
+    ?assertEqual(EWT, WT1).
