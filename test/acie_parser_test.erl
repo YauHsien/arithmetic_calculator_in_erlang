@@ -21,13 +21,13 @@ add_term_3_init_case_3_test() ->
 
     Term2 = #term{ type= ?lparan, loc= 3, value= "(" },
     WT2 = acie_parser:add_term([], Term2, undefined),
-    EWT2 = [#expression{}],
+    EWT2 = [#expression{}, #expression{}],
     ?assertEqual(EWT2, WT2).
 
 
 add_term_3_init_case_4_test() ->
     
-    Term = #term{ type= ?lparan, loc= 4, value= ")" },
+    Term = #term{ type= ?rparan, loc= 4, value= ")" },
     WT = acie_parser:add_term([], Term, undefined),
     EWT = {error, bad_term},
     ?assertEqual(EWT, WT).
