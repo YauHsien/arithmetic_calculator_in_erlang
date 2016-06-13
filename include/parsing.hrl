@@ -13,6 +13,8 @@
 		      right :: #expression{} | int1() | float1()
 		    }).
 
+-record(paran, { exp :: #expression{} }).
+
 -type waiting_tree() :: [ #term{ type :: (?numeral|?float) } |
 			  #expression{}
 			].

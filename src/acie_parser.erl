@@ -1,14 +1,16 @@
 -module(acie_parser).
 -compile(export_all).
--export([add_term/3]).
+-export([add_term/3, drop_term/1]).
 -include("../include/parsing.hrl").
 
 
 -spec add_term(waiting_tree(), term1(), PrevTerm :: term1())
 	     -> waiting_tree() | {error, bad_term}.
 
-add_term([], #term{}= Term, PrevTerm) ->
-    add_term([#expression{}], Term, PrevTerm);
+add_term([], #term{ type= T }= Term, _PrevTerm)
+  when T == ?numeral orelse T == ?float ->
+
+    [Term];
 
 add_term([#expression{ left= undefined }= Exp|WT],
 	 #term{ type= TypeNum }= Term,
@@ -112,3 +114,28 @@ reduce([#expression{ full= true }= E1,
 	#expression{ right= undefined }= E2 | WT]) ->
     reduce([E2#expression{ right= E1 }|WT]).
 
+
+
+-spec drop_term(waiting_tree()) -> {waiting_tree(), #term{}}.
+
+drop_term([#term{}= Term|WT]) ->
+    {WT, Term};
+
+drop_term([#expression{ op= U, left= U, right= U }|WT])
+  when U == undefined ->
+    {WT, #term{ type= ?lparan, loc= 0, value= "(" }};
+
+drop_term([#expression{ op= U, left= L }= E|WT])
+  when U == undefined andalso is_record(L, expression) ->
+    drop_term([L, E#expression{ left= U }|WT]);
+
+drop_term([#expression{ op= Op, right= U }= E|WT])
+  when U == undefined andalso Op =/= U ->
+    {[E#expression{ op= U }|WT], Op};
+
+drop_term([#expression{ full= true, right= R }= E|WT])
+  when R =/= undefined ->
+    drop_term([R, E#expression{ full= false, right= undefined }|WT]);
+
+drop_term(WT) ->
+    WT.

@@ -10,14 +10,13 @@ is_waiting_tree([]) ->
 is_waiting_tree([TermOrExp]) ->
     is_term(TermOrExp) orelse is_expression(TermOrExp);
 is_waiting_tree(WT) when is_list(WT) ->
-    is_waiting_tree([hd(WT)]) andalso
-	lists:foldl(fun(_, false) ->
-			    false;
-		       (#expression{ full= false }= Exp, _) ->
-			    is_expression(Exp);
-		       (_, _) ->
-			    false
-		    end, true, tl(WT));
+    lists:foldl(fun(_, false) ->
+			false;
+		   (#expression{ full= false }= Exp, _) ->
+			is_expression(Exp);
+		   (_, _) ->
+			false
+		end, true, WT);
 is_waiting_tree(_) ->
     false.
 
@@ -30,26 +29,20 @@ is_term(_) ->
     false.
 
 
-is_expression(#expression{ full= false,
-			   op= undefined,
-			   left= Left,
-			   right= undefined })
-  when Left =/= undefined ->
+is_expression(#expression{ full= false, op= U, left= U, right= U })
+  when U == undefined ->
     true;
 
-is_expression(#expression{ full= false,
-			   op= Op,
-			   left= Left,
-			   right= undefined })
-  when Op =/= undefined andalso Left =/= undefined ->
+is_expression(#expression{ full= false, op= U, left= L, right= U })
+  when U == undefined andalso L =/= U ->
     true;
 
-is_expression(#expression{ full= true,
-			   op= Op,
-			   left= Left,
-			   right= Right })
-  when Op =/= undefined andalso Left =/= undefined andalso
-     Right =/= undefined ->
+is_expression(#expression{ full= false, op= Op, left= L, right= U })
+  when U == undefined andalso Op =/= U andalso L =/= U ->
+    true;
+
+is_expression(#expression{ full= true, op= Op, left= L, right= R })
+  when Op =/= undefined andalso L =/= undefined andalso R =/= undefined ->
     true;
 
 is_expression(_) ->
