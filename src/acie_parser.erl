@@ -42,13 +42,21 @@ add_term([#expression{ op= Op, left= Left, right= Right }= Exp|WT],
   when Left == undefined orelse
        (Op =/= undefined andalso Right == undefined) ->
 
-    [#expression{}, Exp|WT];
+    [#expression{}, #paran{}, Exp|WT];
 
-add_term([#expression{ full= true }= Exp|WT],
+add_term([#paran{ exp= E }= E1, #expression{ op= Op,
+					     left= L,
+					     right= R }= E2|WT],
 	 #term{ type= ?rparan },
-	 _PrevTerm) ->
+	 _PrevTerm)
+  when E =/= undefined ->
 
-    [#expression{ left= Exp }|WT];
+    case {L, Op, R} of
+	{undefind, _, _} ->
+	    [E2#expression{ left= E1 }|WT];
+	{_, _, U = undefined} when Op =/= U ->
+	    reduce([E2#expression{ full= true, right= E1 }|WT])
+    end;
 
 add_term([#expression{ op= PrevTerm, right= Right }= Exp|WT],
 	 #term{ type= ?op_mul }= Term,
@@ -106,13 +114,16 @@ reduce([_]= WT) ->
 reduce([#expression{ full= false }|_]= WT) ->
     WT;
 
+reduce([#expression{ full= true }= E, #paran{}|WT]) ->
+    [#paran{ exp= E }|WT];
+
 reduce([#expression{ full= true }= E1,
 	#expression{ left= undefined }= E2 | WT]) ->
     reduce([E2#expression{ left= E1 }|WT]);
 
 reduce([#expression{ full= true }= E1,
 	#expression{ right= undefined }= E2 | WT]) ->
-    reduce([E2#expression{ right= E1 }|WT]).
+    reduce([E2#expression{ full= true, right= E1 }|WT]).
 
 
 
