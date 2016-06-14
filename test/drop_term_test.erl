@@ -11,10 +11,10 @@ expected_values() ->
       {"2+",        cases:waiting_tree("2")         ,ok},
       {"2+(",       cases:waiting_tree("2+")        ,ok},
       {"2+(4",      cases:waiting_tree("2+(")       ,ok},
-      {"2+(4-",     cases:waiting_tree("2+(4")      , ok},
+      {"2+(4-",     cases:waiting_tree("2+(4")      , bypass},
       {"2+(4-1",    cases:waiting_tree("2+(4-")     , ok},
       {"2+(4-1)",   cases:waiting_tree("2+(4-1")    , ok},
-      {"2+(4-1)*",  cases:waiting_tree("2+(4-1)")   ,ok},
+      {"2+(4-1)*",  cases:waiting_tree("2+(4-1)")   , bypass},
       {"2+(4-1)*3", cases:waiting_tree("2+(4-1)*")  ,ok}
     ].
 
@@ -27,6 +27,6 @@ cases_test() ->
 		   end,
 		   lists:seq(1, length(Str))),
     Es = lists:map(fun({A, {B, _}, C}) -> {A, B, C} end, expected_values()),
-    lists:map(fun({_, bypass}) -> ok;
+    lists:map(fun({{_, _, bypass}, _}) -> ok;
 		 ({E, V}) -> ?assertEqual(E, V) end,
 	      lists:zip(Es, Vs)).
