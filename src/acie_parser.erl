@@ -19,6 +19,12 @@ add_term([#expression{ left= undefined }= Exp|WT],
 
     [Exp#expression{ left= Term }|WT];
 
+add_term([#term{ type= TypeNum }= Term], #term{ type= TypeOp }= Term1, Term)
+  when (TypeNum == ?numeral orelse TypeNum == ?float) orelse
+       (TypeOp == ?op_add orelse TypeOp == ?op_mul) ->
+
+    add_term([#expression{ left= Term }], Term1, Term);
+
 add_term([#expression{ op= undefined, left= Left }= Exp|WT],
 	 #term{ type= TypeOp }= Term,
 	 _PrevTerm)
@@ -97,7 +103,7 @@ add_term([#expression{ full= true, op= #term{ type= TypeOp }}= Exp|WT],
   when ((TypeOp == ?op_mul
 	 andalso (TypeOp1 == ?op_mul orelse TypeOp1 == ?op_add))
 	orelse (TypeOp == ?op_add andalso TypeOp1 == ?op_add))
-       andalso TypeNonOp =/= ?op_add andalso TypeNonOp == ?op_add ->
+       andalso TypeNonOp =/= ?op_add ->
 
     [#expression{ op= Term, left= Exp }|WT];
 

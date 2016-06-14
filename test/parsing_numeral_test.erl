@@ -4,6 +4,7 @@
 -include("../include/test.hrl").
 
 -define(nt, #term{ type= ?numeral, loc= 3, value= "999" }).
+%-define(nt, #term{ type= ?float, loc= 5, value="3.14" }).
 
 expected_values() ->
     [ {"",          [?nt]},

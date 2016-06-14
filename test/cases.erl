@@ -84,5 +84,6 @@ waiting_tree(9) -> % "2+(4-1)*3"
 							     full= true,
 							     op= ?tt5,
 							     left= ?tt4,
-							     right= ?tt6 }}}}],
+							     right= ?tt6 }},
+				       right= ?tt9 }}],
      ?tt9}.
