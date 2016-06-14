@@ -7,10 +7,26 @@
 -spec add_term(waiting_tree(), term1(), PrevTerm :: term1())
 	     -> waiting_tree() | {error, bad_term}.
 
-add_term([], #term{ type= T }= Term, _PrevTerm)
+add_term(WT, #term{ type= T }= Term, _PrevTerm)
   when T == ?numeral orelse T == ?float ->
 
-    [Term];
+    case WT of
+	[] ->
+	    [Term];
+
+	[#paren{}|_] ->
+	    [#expression{ left= Term }|WT];
+
+	[#expression{ left= undefined }= E|WT1] ->
+	    [E#expression{ left= Term }|WT1];
+
+	[#expression{ op= Op, right= U }= E|WT1]
+	  when U == undefined andalso Op =/= U ->
+	    reduce([E#expression{ full= true, right= Term }|WT1]);
+
+	_ ->
+	    {error, bad_term}
+    end;
 
 add_term([#expression{ left= undefined }= Exp|WT],
 	 #term{ type= TypeNum }= Term,
@@ -42,27 +58,30 @@ add_term([#expression{ op= PrevTerm, left= Left, right= undefined }= Exp|WT],
 
     reduce([Exp#expression{ full= true, right= Term }|WT]);
 
-add_term([#expression{ op= Op, left= Left, right= Right }= Exp|WT],
-	 #term{ type= ?lparen },
-	 _PrevTerm)
-  when Left == undefined orelse
-       (Op =/= undefined andalso Right == undefined) ->
+add_term(WT, #term{ type= ?lparen }, _PrevTerm) ->
 
-    [#expression{}, #paren{}, Exp|WT];
+    case WT of
+	[] ->
+	    [#paren{}];
 
-add_term([#paren{ exp= E }= E1, #expression{ op= Op,
-					     left= L,
-					     right= R }= E2|WT],
-	 #term{ type= ?rparen },
-	 _PrevTerm)
-  when E =/= undefined ->
+	[#expression{ left= undefined }|_] ->
+	    [#paren{}|WT];
 
-    case {L, Op, R} of
-	{undefined, _, _} ->
-	    [E2#expression{ left= E1 }|WT];
-	{_, _, U = undefined} when Op =/= U ->
-	    reduce([E2#expression{ full= true, right= E1 }|WT])
+	[#expression{ op= Op, right= U }|_]
+	  when U == undefined andalso Op =/= U ->
+	    [#paren{}|WT];
+
+	[#paren{}|_] ->
+	    [#paren{}|WT];
+
+	_ ->
+	    {error, bad_term}
     end;
+
+add_term([#expression{ full= true }= E, #paren{}|WT], #term{ type= ?rparen },
+	 _PrevTerm) ->
+
+    reduce([#paren{ exp= E }|WT]);
 
 add_term([#expression{ op= PrevTerm, right= Right }= Exp|WT],
 	 #term{ type= ?op_mul }= Term,
@@ -114,14 +133,9 @@ add_term(_, _, _) ->
 
 
 -spec reduce(waiting_tree()) -> waiting_tree().
-reduce([_]= WT) ->
-    WT;
 
 reduce([#expression{ full= false }|_]= WT) ->
     WT;
-
-reduce([#expression{ full= true }= E, #paren{}|WT]) ->
-    [#paren{ exp= E }|WT];
 
 reduce([#expression{ full= true }= E1,
 	#expression{ left= undefined }= E2 | WT]) ->
@@ -129,7 +143,26 @@ reduce([#expression{ full= true }= E1,
 
 reduce([#expression{ full= true }= E1,
 	#expression{ right= undefined }= E2 | WT]) ->
-    reduce([E2#expression{ full= true, right= E1 }|WT]).
+    reduce([E2#expression{ full= true, right= E1 }|WT]);
+
+reduce([#paren{ exp= E }= E1, E2|WT]= WT1) ->
+
+    case {E, E2} of
+	{undefined, _} ->
+	    WT1;
+
+	{_, #expression{ left= undefined }} ->
+	    [E2#expression{ left= E1 }|WT];
+
+	{_, #expression{ op= Op, right= U }}
+	  when U == undefined andalso Op =/= U ->
+	    [E2#expression{ full= true, right= E1 }|WT]
+    end;
+
+reduce(WT) ->
+    WT.
+
+
 
 
 

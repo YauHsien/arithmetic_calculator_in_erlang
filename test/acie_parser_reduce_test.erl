@@ -7,18 +7,11 @@
 
 case_1_test() ->
     % "2+(4-999"
-    Case = [#expression{ full= true,
-			 op= ?tt5,
-			 left= ?tt4,
-			 right= ?nt },
+    Case = [#expression{ full= true, op= ?tt5, left= ?tt4, right= ?nt },
 	    #paren{},
-	    #expression{ op= ?tt2,
-			 left= ?tt1 }],
+	    #expression{ op= ?tt2, left= ?tt1 }],
     V = acie_parser:reduce(Case),
-    E = [#paren{ exp= #expression{ full= true,
-				   op= ?tt5,
-				   left= ?tt4,
-				   right= ?nt } },
-	 #expression{ op= ?tt2,
-		      left= ?tt1 }],
+    E = [#expression{ full= true, op= ?tt5, left= ?tt4, right= ?nt },
+	 #paren{},
+	 #expression{ op= ?tt2, left= ?tt1 }],
     ?assertEqual(E, V).

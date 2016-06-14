@@ -31,8 +31,7 @@ waiting_tree(2) -> % "2+"
      ?tt2};
 
 waiting_tree(3) -> % "2+("
-    {[#expression{},
-      #paren{},
+    {[#paren{},
       #expression{ op= ?tt2, left= ?tt1 }],
      ?tt3};
 
