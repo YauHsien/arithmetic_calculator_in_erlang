@@ -2,12 +2,12 @@
 -include_lib("eunit/include/eunit.hrl").
 -include("../include/parsing.hrl").
 
-%% {add_term,{term,lparan,1,undefined}} received
+%% {add_term,{term,lparen,1,undefined}} received
 %% {add_term,{term,numeral,2,[49,50]}} received
 %% {add_term,{term,op_add,4,[43]}} received
 %% ok
 %% {add_term,{term,numeral,5,[51,52]}} received
-%% 2> {add_term,{term,rparan,7,undefined}} received
+%% 2> {add_term,{term,rparen,7,undefined}} received
 %% 2> {add_term,{term,op_mul,8,[42]}} received
 %% 2> {add_term,{term,numeral,9,[53,54]}} received
 %% 2> {add_term,{term,op_mul,11,[47]}} received
@@ -21,7 +21,7 @@
 
 %%     Exp = undefined,
 
-%%     Term1 = #term{ type= ?lparan, loc= 1 },
+%%     Term1 = #term{ type= ?lparen, loc= 1 },
 %%     Exp1 = #expression{},
 
 %%     Term2 = #term{ type= ?numeral, loc= 2, value= "12" },
@@ -33,7 +33,7 @@
 %%     Term4 = #term{ type= ?numeral, loc= 5, value= "34" },
 %%     Exp4 = #expression{ type= ?op_add, left= Term2, right= Term4 },
 
-%%     Term5 = #term{ type= ?rparan, loc= 7 },
+%%     Term5 = #term{ type= ?rparen, loc= 7 },
 %%     Exp5 = #expression{ left= Exp4 },
 
 %%     Term6 = #term{ type= ?op_mul, loc= 8, value= "/" },
@@ -161,11 +161,11 @@
 %%     Terms =
 %% 	[ {add_term, #term{ type= ?numeral, loc= 2, value= "12" }},
 %% 	  {add_term, #term{ type= ?op_mul, loc= 3, value= "*" }},
-%% 	  {add_term, #term{ type= ?lparan, loc=5, value= "(" }},
+%% 	  {add_term, #term{ type= ?lparen, loc=5, value= "(" }},
 %% 	  {add_term, #term{ type= ?float, loc= 7, value= "3.4" }},
 %% 	  {add_term, #term{ type= ?op_mul, loc= 10, value= "+" }},
 %% 	  {add_term, #term{ type= ?numeral, loc= 10, value= "56" }},
-%% 	  {add_term, #term{ type= ?rparan, loc= 11, value= ")" }},
+%% 	  {add_term, #term{ type= ?rparen, loc= 11, value= ")" }},
 %% 	  {add_term, #term{ type= ?op_add, loc= 12, value= "+" }},
 %% 	  {add_term, #term{ type= ?numeral, loc= 13, value= "78" }},
 %% 	  drop_term,

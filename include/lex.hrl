@@ -10,8 +10,8 @@
 -define(op_mul, op_mul).
 -define(sep, sep).
 -define(empty, empty).
--define(lparan, lparan).
--define(rparan, rparan).
+-define(lparen, lparen).
+-define(rparen, rparen).
 -define(not_accepted, not_accepted).
 -define(head, head).
 -define(non_head, non_head).
@@ -25,8 +25,8 @@
 		      | ?op_mul
 		      | ?sep
 		      | ?empty
-		      | ?lparan
-		      | ?rparan
+		      | ?lparen
+		      | ?rparen
 		      | ?not_accepted,
 		loc :: integer(),
 		value :: any() }).

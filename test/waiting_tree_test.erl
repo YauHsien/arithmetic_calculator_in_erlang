@@ -8,7 +8,7 @@ case_1_test() -> % for "2+(4-1)"
     E = {[#expression{ full= true,
 		       op= ?tt2,
 		       left= ?tt1,
-		       right= #paran{ exp= #expression{ full= true,
+		       right= #paren{ exp= #expression{ full= true,
 							op= ?tt5,
 							left= ?tt4,
 							right= ?tt6 } } }],
@@ -23,7 +23,7 @@ case_2_test() -> % for "2+(4-1)*3"
 		       right= #expression{
 				 full= true,
 				 op= ?tt8,
-				 left= #paran{
+				 left= #paren{
 					  exp= #expression{
 						  full= true,
 						  op= ?tt5,

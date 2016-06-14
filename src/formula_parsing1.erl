@@ -54,12 +54,12 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-%% {add_term,{term,lparan,1,undefined}} received
+%% {add_term,{term,lparen,1,undefined}} received
 %% {add_term,{term,numeral,2,[49,50]}} received
 %% {add_term,{term,op_add,4,[43]}} received
 %% ok
 %% {add_term,{term,numeral,5,[51,52]}} received
-%% 2> {add_term,{term,rparan,7,undefined}} received
+%% 2> {add_term,{term,rparen,7,undefined}} received
 %% 2> {add_term,{term,op_mul,8,[42]}} received
 %% 2> {add_term,{term,numeral,9,[53,54]}} received
 %% 2> {add_term,{term,op_mul,11,[47]}} received

@@ -14,7 +14,7 @@ expected_values() ->
       {"2+(",       {error, bad_term}},
       {"2+(4",      [#expression{ op= ?nt,
 				  left= ?tt4 },
-		     #paran{},
+		     #paren{},
 		     #expression{ op= ?tt2,
 				  left= ?tt1 }]},
       {"2+(4-",     {error, bad_term}},
@@ -23,7 +23,7 @@ expected_values() ->
 						     op= ?tt5,
 						     left= ?tt4,
 						     right= ?tt6 } },
-		     #paran{},
+		     #paren{},
 		     #expression{ op= ?tt2,
 				  left= ?tt1 }]},
       {"2+(4-1)",   [#expression{
@@ -32,7 +32,7 @@ expected_values() ->
 				 full= true,
 				 op= ?tt2,
 				 left= ?tt1,
-				 right= #paran{
+				 right= #paren{
 					   exp= #expression{
 						   full= true,
 						   op= ?tt5,
@@ -48,7 +48,7 @@ expected_values() ->
 				 right= #expression{
 					   full= true,
 					   op= ?tt8,
-					   left= #paran{
+					   left= #paren{
 						  exp= #expression{
 							  full= true,
 							  op= ?tt5,

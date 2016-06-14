@@ -32,25 +32,25 @@ waiting_tree(2) -> % "2+"
 
 waiting_tree(3) -> % "2+("
     {[#expression{},
-      #paran{},
+      #paren{},
       #expression{ op= ?tt2, left= ?tt1 }],
      ?tt3};
 
 waiting_tree(4) -> % "2+(4"
     {[#expression{ left= ?tt4 },
-      #paran{},
+      #paren{},
       #expression{ op= ?tt2, left= ?tt1 }],
      ?tt4};
 
 waiting_tree(5) -> % "2+(4-"
     {[#expression{ op= ?tt5, left= ?tt4 },
-      #paran{},
+      #paren{},
       #expression{ op= ?tt2, left= ?tt1 }],
      ?tt5};
 
 waiting_tree(6) -> % "2+(4-1"
     {[#expression{ full= true, op= ?tt5, left= ?tt4, right= ?tt6 },
-      #paran{},
+      #paren{},
       #expression{ op= ?tt2, left= ?tt1 }],
      ?tt6};
 
@@ -58,7 +58,7 @@ waiting_tree(7) -> % "2+(4-1)"
     {[#expression{ full= true,
 		   op= ?tt2,
 		   left= ?tt1,
-		   right= #paran{ exp= #expression{ full= true,
+		   right= #paren{ exp= #expression{ full= true,
 						    op= ?tt5,
 						    left= ?tt4,
 						    right= ?tt6 } }}],
@@ -66,7 +66,7 @@ waiting_tree(7) -> % "2+(4-1)"
 
 waiting_tree(8) -> % "2+(4-1)*"
     {[#expression{ op= ?tt8,
-		   left= #paran{ exp= #expression{ full= true,
+		   left= #paren{ exp= #expression{ full= true,
 						   op= ?tt5,
 						   left= ?tt4,
 						   right= ?tt6 } }},
@@ -80,7 +80,7 @@ waiting_tree(9) -> % "2+(4-1)*3"
 		   left= ?tt1,
 		   right= #expression{ full= true,
 				       op= ?tt8,
-				       left= #paran{ exp= #expression{
+				       left= #paren{ exp= #expression{
 							     full= true,
 							     op= ?tt5,
 							     left= ?tt4,

@@ -43,17 +43,17 @@ add_term([#expression{ op= PrevTerm, left= Left, right= undefined }= Exp|WT],
     reduce([Exp#expression{ full= true, right= Term }|WT]);
 
 add_term([#expression{ op= Op, left= Left, right= Right }= Exp|WT],
-	 #term{ type= ?lparan },
+	 #term{ type= ?lparen },
 	 _PrevTerm)
   when Left == undefined orelse
        (Op =/= undefined andalso Right == undefined) ->
 
-    [#expression{}, #paran{}, Exp|WT];
+    [#expression{}, #paren{}, Exp|WT];
 
-add_term([#paran{ exp= E }= E1, #expression{ op= Op,
+add_term([#paren{ exp= E }= E1, #expression{ op= Op,
 					     left= L,
 					     right= R }= E2|WT],
-	 #term{ type= ?rparan },
+	 #term{ type= ?rparen },
 	 _PrevTerm)
   when E =/= undefined ->
 
@@ -86,7 +86,7 @@ add_term([#expression{ full= true,
   when TypeNonOp =/= ?op_mul andalso TypeNonOp =/= ?op_add ->
 
     case Right of
-	Case when is_record(Case, term) orelse is_record(Case, paran)  ->
+	Case when is_record(Case, term) orelse is_record(Case, paren)  ->
 	    [#expression{ op= Term, left= Right },
 	     Exp#expression{ full= false, right= undefined }|WT];
 	#expression{} ->
@@ -120,8 +120,8 @@ reduce([_]= WT) ->
 reduce([#expression{ full= false }|_]= WT) ->
     WT;
 
-reduce([#expression{ full= true }= E, #paran{}|WT]) ->
-    [#paran{ exp= E }|WT];
+reduce([#expression{ full= true }= E, #paren{}|WT]) ->
+    [#paren{ exp= E }|WT];
 
 reduce([#expression{ full= true }= E1,
 	#expression{ left= undefined }= E2 | WT]) ->
@@ -140,7 +140,7 @@ drop_term([#term{}= Term|WT]) ->
 
 drop_term([#expression{ op= U, left= U, right= U }|WT])
   when U == undefined ->
-    {WT, #term{ type= ?lparan, loc= 0, value= "(" }};
+    {WT, #term{ type= ?lparen, loc= 0, value= "(" }};
 
 drop_term([#expression{ op= U, left= L }= E|WT])
   when U == undefined andalso is_record(L, expression) ->

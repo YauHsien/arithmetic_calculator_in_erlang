@@ -164,11 +164,11 @@ meet([#term{ type= ?numeral, value= N }= Term|_], _Loc, ?backspace) ->
 meet(_, _Loc, ?backspace) ->
     ?empty;
 
-meet(_Terms, Loc, ?lparan) ->
-    build_term(?lparan, Loc);
+meet(_Terms, Loc, ?lparen) ->
+    build_term(?lparen, Loc);
 
-meet(_Terms, Loc, ?rparan) ->
-    build_term(?rparan, Loc);
+meet(_Terms, Loc, ?rparen) ->
+    build_term(?rparen, Loc);
 
 meet([#term{ type= ?numeral }= Term|Terms], _Loc, ?point) ->
     [append_term(convert_term(Term, ?float), ".")|Terms];
@@ -251,8 +251,8 @@ do_when(_, _) -> ok.
 -spec cc(char()) -> atom() | {atom(), term()}.
 %% cc: convert character; build term
 cc($<) -> ?backspace;
-cc($() -> ?lparan;
-cc($)) -> ?rparan;
+cc($() -> ?lparen;
+cc($)) -> ?rparen;
 cc($+) -> {?op_add, "+"};
 cc($-) -> {?op_add, "-"};
 cc($*) -> {?op_mul, "*"};
