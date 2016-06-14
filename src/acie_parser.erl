@@ -169,23 +169,42 @@ reduce(WT) ->
 -spec drop_term(waiting_tree()) -> {waiting_tree(), #term{}}.
 
 drop_term([#term{}= Term|WT]) ->
+
     {WT, Term};
 
-drop_term([#expression{ op= U, left= U, right= U }|WT])
-  when U == undefined ->
-    {WT, #term{ type= ?lparen, loc= 0, value= "(" }};
+drop_term([#paren{ exp= E }|WT]) ->
+
+    case E of
+	undefined ->
+	    {WT, #term{ type= ?lparen, loc= 0, value= "(" }};
+	_ ->
+	    {[E, #paren{}|WT], #term{ type= ?rparen, loc= 0, value= ")" }}
+    end;
 
 drop_term([#expression{ op= U, left= L }= E|WT])
-  when U == undefined andalso is_record(L, expression) ->
-    drop_term([L, E#expression{ left= U }|WT]);
+  when U == undefined andalso L =/= U ->
 
-drop_term([#expression{ op= Op, right= U }= E|WT])
+    case L of
+	#term{} ->
+	    {WT, L};
+	#expression{} ->
+	    case drop_term(L) of
+		{[], Term} ->
+		    {WT, Term};
+		{L1, Term} ->
+		    {[E#expression{ left= L1 }|WT], Term}
+	    end
+    end;
+
+drop_term([#expression{ op= Op, left= L, right= U }|WT])
   when U == undefined andalso Op =/= U ->
-    {[E#expression{ op= U }|WT], Op};
+
+    {[L|WT], Op};
 
 drop_term([#expression{ full= true, right= R }= E|WT])
   when R =/= undefined ->
+
     drop_term([R, E#expression{ full= false, right= undefined }|WT]);
 
 drop_term(WT) ->
-    WT.
+    {WT, undefined}.
