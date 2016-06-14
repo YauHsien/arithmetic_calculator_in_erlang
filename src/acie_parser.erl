@@ -58,7 +58,7 @@ add_term([#paran{ exp= E }= E1, #expression{ op= Op,
   when E =/= undefined ->
 
     case {L, Op, R} of
-	{undefind, _, _} ->
+	{undefined, _, _} ->
 	    [E2#expression{ left= E1 }|WT];
 	{_, _, U = undefined} when Op =/= U ->
 	    reduce([E2#expression{ full= true, right= E1 }|WT])
@@ -82,17 +82,17 @@ add_term([#expression{ full= true,
 		       op= #term{ type= ?op_add },
 		       right= Right }= Exp|WT],
 	 #term{ type= ?op_mul }= Term,
-	 #term{ type= TypeNum }= PrevTerm)
-  when TypeNum == ?float orelse TypeNum == ?numeral ->
+	 #term{ type= TypeNonOp }= PrevTerm)
+  when TypeNonOp =/= ?op_mul andalso TypeNonOp =/= ?op_add ->
 
     case Right of
-	#term{} ->
+	Case when is_record(Case, term) orelse is_record(Case, paran)  ->
 	    [#expression{ op= Term, left= Right },
 	     Exp#expression{ full= false, right= undefined }|WT];
 	#expression{} ->
 	    add_term(
 	      [Right,
-	       Exp#expression{ full= false, right= undefind }|WT],
+	       Exp#expression{ full= false, right= undefined }|WT],
 	      Term,
 	      PrevTerm)
     end;
